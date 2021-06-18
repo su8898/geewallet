@@ -3,14 +3,17 @@ namespace GWallet.Backend.UtxoCoin.Lightning
 open System
 
 open NBitcoin
+open DotNetLightning.Crypto
 open DotNetLightning.Channel
 open DotNetLightning.Utils
+open DotNetLightning.Serialization
 open DotNetLightning.Serialization.Msgs
 open ResultUtils.Portability
 
 open GWallet.Backend
 open GWallet.Backend.FSharpUtil
 open GWallet.Backend.FSharpUtil.UwpHacks
+open GWallet.Backend.UtxoCoin
 open GWallet.Backend.UtxoCoin.Lightning.Watcher
 
 type internal LockFundingError =
@@ -432,67 +435,74 @@ and internal ActiveChannel =
 
         let! peerNodeAfterCommitmentSignedSent = peerNode.SendMsg ourCommitmentSignedMsg
 
-        let! recvChannelMsgRes = peerNodeAfterCommitmentSignedSent.RecvChannelMsg()
-        match recvChannelMsgRes with
-        | Error (RecvMsg recvMsgError) -> return Error <| RecvRevokeAndAck recvMsgError
-        | Error (ReceivedPeerErrorMessage (peerNodeAfterRevokeAndAckReceived, errorMessage)) ->
-            let connectedChannelAfterError = {
-                connectedChannel with
-                    PeerNode = peerNodeAfterRevokeAndAckReceived
-                    Channel = channelAfterCommitmentSigned
+        let rec recv (peerNode: PeerNode) =
+            async {
+                let! recvChannelMsgRes = peerNode.RecvChannelMsg()
+                match recvChannelMsgRes with
+                | Error (RecvMsg recvMsgError) -> return Error <| RecvRevokeAndAck recvMsgError
+                | Error (ReceivedPeerErrorMessage (peerNodeAfterRevokeAndAckReceived, errorMessage)) ->
+                    let connectedChannelAfterError = {
+                        connectedChannel with
+                            PeerNode = peerNodeAfterRevokeAndAckReceived
+                            Channel = channelAfterCommitmentSigned
+                    }
+                    let brokenChannel = { BrokenChannel.ConnectedChannel = connectedChannelAfterError }
+                    return Error <| CommitmentSignedPeerErrorResponse
+                        (brokenChannel, errorMessage)
+                | Ok (peerNodeAfterRevokeAndAckReceived, channelMsg) ->
+                    match channelMsg with
+                    | :? RevokeAndACKMsg as theirRevokeAndAckMsg ->
+                        let res, channelAferRevokeAndAck =
+                            let channelCmd = ChannelCommand.ApplyRevokeAndACK theirRevokeAndAckMsg
+                            channelAfterCommitmentSigned.ExecuteCommand channelCmd <| function
+                                | WeAcceptedRevokeAndACK(_)::[] -> Some ()
+                                | _ -> None
+                        let connectedChannelAfterRevokeAndAck = {
+                            connectedChannel with
+                                PeerNode = peerNodeAfterRevokeAndAckReceived
+                                Channel = channelAferRevokeAndAck
+                        }
+                        match res with
+                        | Error err ->
+                            let! connectedChannelAfterErrorSent = connectedChannelAfterRevokeAndAck.SendError err.Message
+                            let brokenChannel = { BrokenChannel.ConnectedChannel = connectedChannelAfterErrorSent }
+                            return Error <| InvalidRevokeAndAck
+                                (brokenChannel, err)
+                        | Ok () ->
+                            let channelPrivKeys = connectedChannel.Channel.ChannelPrivKeys
+                            let commitments = self.Commitments()
+                            let network = connectedChannel.Network
+                            let account = connectedChannel.Account
+
+                            let perCommitmentSecret = theirRevokeAndAckMsg.PerCommitmentSecret
+
+                            let breachStore = BreachDataStore account
+                            let! breachData =
+                                    breachStore
+                                        .LoadBreachData(connectedChannel.ChannelId)
+                                        .InsertRevokedCommitment perCommitmentSecret
+                                                                 commitments
+                                                                 channelPrivKeys
+                                                                 network
+                                                                 account
+                            breachStore.SaveBreachData breachData
+
+                            do! TowerClient.Default.CreateAndSendPunishmentTx perCommitmentSecret
+                                      commitments
+                                      channelPrivKeys
+                                      network
+                                      account
+                                      true
+
+                            connectedChannelAfterRevokeAndAck.SaveToWallet()
+                            let activeChannel = { ConnectedChannel = connectedChannelAfterRevokeAndAck }
+                            return Ok activeChannel
+                    | :? FundingLockedMsg ->
+                        return! recv peerNodeAfterRevokeAndAckReceived
+                    | _ -> return Error <| ExpectedRevokeAndAck channelMsg
             }
-            let brokenChannel = { BrokenChannel.ConnectedChannel = connectedChannelAfterError }
-            return Error <| CommitmentSignedPeerErrorResponse
-                (brokenChannel, errorMessage)
-        | Ok (peerNodeAfterRevokeAndAckReceived, channelMsg) ->
-            match channelMsg with
-            | :? RevokeAndACKMsg as theirRevokeAndAckMsg ->
-                let res, channelAferRevokeAndAck =
-                    let channelCmd = ChannelCommand.ApplyRevokeAndACK theirRevokeAndAckMsg
-                    channelAfterCommitmentSigned.ExecuteCommand channelCmd <| function
-                        | WeAcceptedRevokeAndACK(_)::[] -> Some ()
-                        | _ -> None
-                let connectedChannelAfterRevokeAndAck = {
-                    connectedChannel with
-                        PeerNode = peerNodeAfterRevokeAndAckReceived
-                        Channel = channelAferRevokeAndAck
-                }
-                match res with
-                | Error err ->
-                    let! connectedChannelAfterErrorSent = connectedChannelAfterRevokeAndAck.SendError err.Message
-                    let brokenChannel = { BrokenChannel.ConnectedChannel = connectedChannelAfterErrorSent }
-                    return Error <| InvalidRevokeAndAck
-                        (brokenChannel, err)
-                | Ok () ->
-                    let channelPrivKeys = connectedChannel.Channel.ChannelPrivKeys
-                    let commitments = self.Commitments()
-                    let network = connectedChannel.Network
-                    let account = connectedChannel.Account
 
-                    let perCommitmentSecret = theirRevokeAndAckMsg.PerCommitmentSecret
-
-                    let breachStore = BreachDataStore account
-                    let! breachData =
-                            breachStore
-                                .LoadBreachData(connectedChannel.ChannelId)
-                                .InsertRevokedCommitment perCommitmentSecret
-                                                         commitments
-                                                         channelPrivKeys
-                                                         network
-                                                         account
-                    breachStore.SaveBreachData breachData
-
-                    do! TowerClient.Default.CreateAndSendPunishmentTx perCommitmentSecret
-                              commitments
-                              channelPrivKeys
-                              network
-                              account
-                              true
-
-                    connectedChannelAfterRevokeAndAck.SaveToWallet()
-                    let activeChannel = { ConnectedChannel = connectedChannelAfterRevokeAndAck }
-                    return Ok activeChannel
-            | _ -> return Error <| ExpectedRevokeAndAck channelMsg
+        return! recv peerNodeAfterCommitmentSignedSent
     }
 
     member private self.RecvCommit(): Async<Result<ActiveChannel, RecvCommitError>> = async {
@@ -545,6 +555,57 @@ and internal ActiveChannel =
             | _ -> return Error <| ExpectedCommitmentSigned channelMsg
     }
 
+    member private self.RecvHtlcFulfill(): Async<Result<ActiveChannel, SendMonoHopPaymentError>> = async {
+        let connectedChannel = self.ConnectedChannel
+        let peerNode = connectedChannel.PeerNode
+        let channel = connectedChannel.Channel
+
+        let! recvChannelMsgRes = peerNode.RecvChannelMsg()
+        match recvChannelMsgRes with
+        | Error (RecvMsg _recvMsgError) -> return failwith "not implemetend"
+        | Error (ReceivedPeerErrorMessage (peerNodeAfterHtlcFulfillReceived, _errorMessage)) ->
+            let _connectedChannelAfterError = {
+                connectedChannel with
+                    PeerNode = peerNodeAfterHtlcFulfillReceived
+                    Channel = channel
+            }
+            return failwith "not implemetend"
+        | Ok (peerNodeAfterHtlcFulfillReceived, channelMsg) ->
+            match channelMsg with
+            | :? UpdateFulfillHTLCMsg as theirFulfillMsg ->
+                let res, channelAfterFulfillMsg =
+                    let channelCmd = ChannelCommand.ApplyUpdateFulfillHTLC theirFulfillMsg
+                    channel.ExecuteCommand channelCmd <| function
+                        | WeAcceptedFulfillHTLC(msg, _, _, _)::[] -> Some msg
+                        | _ -> None
+                match res with
+                | Error err ->
+                    let _connectedChannelAfterError = {
+                        connectedChannel with
+                            PeerNode = peerNodeAfterHtlcFulfillReceived
+                            Channel = channelAfterFulfillMsg
+                    }
+                    return failwith (SPrintF1 "not implemetend %s" err.Message)
+                | Ok _ ->
+                    let connectedChannelAfterFulfillMsg = {
+                        connectedChannel with
+                            PeerNode = peerNodeAfterHtlcFulfillReceived
+                            Channel = channelAfterFulfillMsg
+                    }
+                    connectedChannelAfterFulfillMsg.SaveToWallet()
+
+                    let activeChannel = { ConnectedChannel = connectedChannelAfterFulfillMsg }
+                    let! activeChannelAfterCommitReceivedRes = activeChannel.RecvCommit()
+                    match activeChannelAfterCommitReceivedRes with
+                    | Error _err -> return failwith "not implemetend"
+                    | Ok activeChannelAfterCommitReceived ->
+                        let! activeChannelAfterCommitSentRes = activeChannelAfterCommitReceived.SendCommit()
+                        match activeChannelAfterCommitSentRes with
+                        | Error _err -> return failwith "not implemetend"
+                        | Ok activeChannelAfterCommitSent -> return Ok activeChannelAfterCommitSent
+            | _ -> return failwith "not implemetend"
+    }
+
     member internal self.SendMonoHopUnidirectionalPayment (amount: LNMoney)
                                                      : Async<Result<ActiveChannel, SendMonoHopPaymentError>> = async {
         let connectedChannel = self.ConnectedChannel
@@ -577,6 +638,59 @@ and internal ActiveChannel =
                 match activeChannelAfterCommitReceivedRes with
                 | Error err -> return Error <| SendMonoHopPaymentError.RecvCommit err
                 | Ok activeChannelAfterCommitReceived -> return Ok activeChannelAfterCommitReceived
+    }
+
+    member internal self.SendHtlcPayment (amount: LNMoney)
+                                         (paymentPreimage: uint256)
+                                         (paymentSecretOpt: uint256 option)
+                                         (associatedData: byte[])
+                                         (outgoingCLTV: uint32)
+                                                     : Async<Result<ActiveChannel, Exception>> = async {
+        let connectedChannel = self.ConnectedChannel
+        let peerNode = connectedChannel.PeerNode
+        let channel = connectedChannel.Channel
+
+        let sessionKey = new NBitcoin.Key()
+
+        let tlvs =
+            match paymentSecretOpt with
+            | Some paymentSecret ->
+                [| HopPayloadTLV.AmountToForward amount; HopPayloadTLV.OutgoingCLTV outgoingCLTV; HopPayloadTLV.PaymentData(PaymentSecret.Create(paymentSecret), amount) |]
+            | None ->
+                [| HopPayloadTLV.AmountToForward amount; HopPayloadTLV.OutgoingCLTV outgoingCLTV |]
+
+        let realm0Data = TLVPayload(tlvs).ToBytes()
+        let onionPacket = Sphinx.PacketAndSecrets.Create (sessionKey, [channel.RemoteNodeId.Value], [realm0Data], associatedData, Sphinx.PacketFiller.DeterministicPacketFiller)
+
+        let addHtlcMsgRes, channelAfterAddHtlcPayment =
+            let channelCmd = ChannelCommand.AddHTLC { Amount = amount; PaymentHash = (PaymentHash.PaymentHash paymentPreimage); Expiry = BlockHeight outgoingCLTV; Onion = onionPacket.Packet; Upstream=None; Origin = None; CurrentHeight = BlockHeight.Zero }
+            channel.ExecuteCommand channelCmd <| function
+                | WeAcceptedOperationAddHTLC(msg, _)::[] -> Some msg
+                | _ -> None
+        match addHtlcMsgRes with
+        | Error err -> return failwith <| SPrintF1 "error executing mono hop payment command: %s" err.Message
+        | Ok addHtlcMsg ->
+            let! peerNodeAfterAddHtlcSent = peerNode.SendMsg addHtlcMsg
+            let connectedChannelAfterAddHtlcSent = {
+                connectedChannel with
+                    PeerNode = peerNodeAfterAddHtlcSent
+                    Channel = channelAfterAddHtlcPayment
+            }
+            connectedChannelAfterAddHtlcSent.SaveToWallet()
+            let activeChannel = { ConnectedChannel = connectedChannelAfterAddHtlcSent }
+            let! activeChannelAfterCommitSentRes = activeChannel.SendCommit()
+            match activeChannelAfterCommitSentRes with
+            | Error _err -> return failwith "not implemented"
+            | Ok activeChannelAfterCommitSent ->
+                let! activeChannelAfterCommitReceivedRes = activeChannelAfterCommitSent.RecvCommit()
+                match activeChannelAfterCommitReceivedRes with
+                | Error _err -> return failwith "not implemented"
+                | Ok activeChannelAfterCommitReceived ->
+                    let! activeChannelAfterNewCommitRes = activeChannelAfterCommitReceived.RecvHtlcFulfill()
+                    match (activeChannelAfterNewCommitRes) with
+                    |Error _err -> return failwith "not implemented"
+                    | Ok activeChannelAfterNewCommit ->
+                        return Ok (activeChannelAfterNewCommit)
     }
 
     member internal self.RecvMonoHopUnidirectionalPayment
