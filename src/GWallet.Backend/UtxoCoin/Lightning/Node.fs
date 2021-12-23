@@ -12,6 +12,10 @@ open DotNetLightning.Crypto
 open DotNetLightning.Utils
 open DotNetLightning.Serialization.Msgs
 open ResultUtils.Portability
+open NOnion.Network;
+open NOnion.Http;
+open NOnion.Cells.Relay;
+open NOnion.Directory;
 
 open GWallet.Backend
 open GWallet.Backend.UtxoCoin
@@ -855,6 +859,20 @@ module public Connection =
         let nodeMasterPrivKey: NodeMasterPrivKey =
             NodeClient.AccountPrivateKeyToNodeSecret privateKey
             |> NodeMasterPrivKey
+        let transportListener = TransportListener.Bind nodeMasterPrivKey bindAddress
+        new NodeServer (channelStore, transportListener)
+
+module public ConnectionNOnion =
+    let public StartServer (channelStore: ChannelStore)
+                           (password: string)
+                           (bindAddress: IPEndPoint)
+                               : NodeServer =
+        let privateKey = Account.GetPrivateKey channelStore.Account password
+        let nodeMasterPrivKey: NodeMasterPrivKey =
+            NodeClient.AccountPrivateKeyToNodeSecret privateKey
+            |> NodeMasterPrivKey
+
+        let nonionTransportListener = NOnionTransportListener.Bind nodeMasterPrivKey bindAddress
         let transportListener = TransportListener.Bind nodeMasterPrivKey bindAddress
         new NodeServer (channelStore, transportListener)
 

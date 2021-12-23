@@ -13,6 +13,8 @@ open ResultUtils.Portability
 open GWallet.Backend
 open GWallet.Backend.FSharpUtil
 open GWallet.Backend.FSharpUtil.UwpHacks
+open NOnion.Directory
+open NOnion.Network
 
 type PeerDisconnectedError =
     {
@@ -132,6 +134,32 @@ type internal TransportListener =
         let nodeId = PublicKey self.PubKey
         NodeEndPoint.FromParts nodeId self.LocalIPEndPoint
 
+type internal NOnionTransportListener =
+    internal {
+        NodeMasterPrivKey: NodeMasterPrivKey
+        Listener: TorServiceHost
+    }
+    interface IDisposable with
+        member self.Dispose() =
+            ()
+
+    static member internal Bind (nodeMasterPrivKey: NodeMasterPrivKey) (endpoint: IPEndPoint) =
+        // TODO: update RetryCount
+        let RetryCount = 10
+        let directory = TorDirectory.Bootstrap(endpoint) |> Async.RunSynchronously
+        let host = TorServiceHost(directory, RetryCount)
+        host.StartAsync() |> ignore
+
+        {
+            NodeMasterPrivKey = nodeMasterPrivKey
+            Listener = host
+        }
+
+    member internal self.NodeId: NodeId =
+        self.NodeMasterPrivKey.NodeId()
+
+    member internal self.PubKey: PubKey =
+        self.NodeId.Value
 
 type PeerErrorMessage =
     {

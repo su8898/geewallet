@@ -86,6 +86,7 @@
     <Compile Include="UtxoCoin\Lightning\ForceCloseTransaction.fs" />
     <Compile Include="UtxoCoin\Lightning\BreachDataManagement.fs" />
     <Compile Include="UtxoCoin\Lightning\Watcher\TowerClient.fs" />
+    <Compile Include="UtxoCoin\Lightning\FallbackDirectorySelector.fs" />
     <Compile Include="UtxoCoin\Lightning\Network.fs" />
     <Compile Include="UtxoCoin\Lightning\MsgStream.fs" />
     <Compile Include="UtxoCoin\Lightning\PeerNode.fs" />
@@ -113,8 +114,20 @@
     <EmbeddedResource Include="servers.json" />
   </ItemGroup>
   <ItemGroup>
+    <Reference Include="BouncyCastle.Crypto">
+      <HintPath>..\..\packages\Portable.BouncyCastle.1.8.10\lib\net40\BouncyCastle.Crypto.dll</HintPath>
+    </Reference>
+    <Reference Include="Chaos.NaCl-Portable">
+      <HintPath>..\..\packages\NOnion.0.1.0--date20211111-0415.git-3a02a40\lib\netstandard2.0\Chaos.NaCl-Portable.dll</HintPath>
+    </Reference>
+    <Reference Include="FSharp.Core">
+      <HintPath>..\..\packages\FSharp.Core.5.0.0\lib\netstandard2.0\FSharp.Core.dll</HintPath>
+    </Reference>
     <Reference Include="FSharp.Data">
       <HintPath>..\..\packages\FSharp.Data.3.0.0\lib\net45\FSharp.Data.dll</HintPath>
+    </Reference>
+    <Reference Include="FSharpx.Collections">
+      <HintPath>..\..\packages\FSharpx.Collections.3.0.1\lib\netstandard2.0\FSharpx.Collections.dll</HintPath>
     </Reference>
     <Reference Include="MessagePack">
       <HintPath>..\..\packages\MessagePack.2.2.85\lib\netstandard2.0\MessagePack.dll</HintPath>
@@ -137,6 +150,9 @@
     <Reference Include="mscorlib" />
     <Reference Include="Nerdbank.Streams">
       <HintPath>..\..\packages\Nerdbank.Streams.2.6.81\lib\netstandard2.0\Nerdbank.Streams.dll</HintPath>
+    </Reference>
+    <Reference Include="NOnion">
+      <HintPath>..\..\packages\NOnion.0.1.0--date20211111-0415.git-3a02a40\lib\netstandard2.0\NOnion.dll</HintPath>
     </Reference>
     <Reference Include="StreamJsonRpc">
       <HintPath>..\..\packages\StreamJsonRpc.2.8.21\lib\netstandard2.0\StreamJsonRpc.dll</HintPath>
@@ -163,15 +179,18 @@
     <Reference Include="System.Security.Principal.Windows">
       <HintPath>..\..\packages\System.Security.Principal.Windows.5.0.0\lib\net461\System.Security.Principal.Windows.dll</HintPath>
     </Reference>
+    <Reference Include="System.Text.Encodings.Web">
+      <HintPath>..\..\packages\System.Text.Encodings.Web.5.0.1\lib\net461\System.Text.Encodings.Web.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Text.Json">
+      <HintPath>..\..\packages\System.Text.Json.5.0.2\lib\net461\System.Text.Json.dll</HintPath>
+    </Reference>
     <Reference Include="System.Threading.Tasks.Dataflow">
       <HintPath>..\..\packages\System.Threading.Tasks.Dataflow.5.0.0\lib\net461\System.Threading.Tasks.Dataflow.dll</HintPath>
     </Reference>
     <Reference Include="System.Xml.Linq" />
     <Reference Include="Common.Logging.Core">
       <HintPath>..\..\packages\Common.Logging.Core.3.4.1\lib\net40\Common.Logging.Core.dll</HintPath>
-    </Reference>
-    <Reference Include="BouncyCastle.Crypto">
-      <HintPath>..\..\packages\Portable.BouncyCastle.1.8.6.7\lib\net40\BouncyCastle.Crypto.dll</HintPath>
     </Reference>
     <Reference Include="Newtonsoft.Json">
       <HintPath>..\..\packages\Newtonsoft.Json.12.0.2\lib\net45\Newtonsoft.Json.dll</HintPath>
@@ -217,9 +236,6 @@
       <HintPath>..\..\packages\System.IO.Pipelines.5.0.1\lib\net461\System.IO.Pipelines.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.CSharp" />
-    <Reference Include="FSharp.Core">
-      <HintPath>..\..\packages\FSharp.Core.4.7.0\lib\net45\FSharp.Core.dll</HintPath>
-    </Reference>
     <Reference Include="Microsoft.Win32.Primitives">
       <HintPath>..\..\packages\Microsoft.Win32.Primitives.4.3.0\lib\net46\Microsoft.Win32.Primitives.dll</HintPath>
     </Reference>
