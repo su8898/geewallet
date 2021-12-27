@@ -873,7 +873,7 @@ module public NOnionConnection =
             NodeClient.AccountPrivateKeyToNodeSecret privateKey
             |> NodeMasterPrivKey
 
-        let nonionTransportListener = fst (NOnionTransportListener.Bind nodeMasterPrivKey bindAddress)
+        let nonionTransportListener,_startJob = NOnionTransportListener.Bind nodeMasterPrivKey bindAddress
         // TODO: delete this line below
         let transportListener = TransportListener.Bind nodeMasterPrivKey bindAddress
         new NodeServer (channelStore, transportListener, Some nonionTransportListener)
