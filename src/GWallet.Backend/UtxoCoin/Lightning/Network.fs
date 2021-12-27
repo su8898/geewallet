@@ -148,12 +148,12 @@ type internal NOnionTransportListener =
         let RetryCount = 10
         let directory = TorDirectory.Bootstrap(endpoint) |> Async.RunSynchronously
         let host = TorServiceHost(directory, RetryCount)
-        host.Start()
+        let start = host.Start()
 
         {
             NodeMasterPrivKey = nodeMasterPrivKey
             Listener = host
-        }
+        }, start
 
     member internal self.NodeId: NodeId =
         self.NodeMasterPrivKey.NodeId()
