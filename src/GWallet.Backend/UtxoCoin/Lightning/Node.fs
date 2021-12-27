@@ -391,9 +391,10 @@ type NodeClient internal (channelStore: ChannelStore, nodeMasterPrivKey: NodeMas
         }
 
 
-type NodeServer internal (channelStore: ChannelStore, transportListener: TransportListener) =
+type NodeServer internal (channelStore: ChannelStore, transportListener: TransportListener, nonionTransportListener: Option<NOnionTransportListener>) =
     member val ChannelStore = channelStore
     member val internal TransportListener = transportListener
+    member val internal NOnionTransportListener = nonionTransportListener
     member val internal NodeMasterPrivKey = transportListener.NodeMasterPrivKey
     member val internal NodeId = transportListener.NodeId
     member val EndPoint = transportListener.EndPoint
@@ -860,9 +861,9 @@ module public Connection =
             NodeClient.AccountPrivateKeyToNodeSecret privateKey
             |> NodeMasterPrivKey
         let transportListener = TransportListener.Bind nodeMasterPrivKey bindAddress
-        new NodeServer (channelStore, transportListener)
+        new NodeServer (channelStore, transportListener, None)
 
-module public ConnectionNOnion =
+module public NOnionConnection =
     let public StartServer (channelStore: ChannelStore)
                            (password: string)
                            (bindAddress: IPEndPoint)
@@ -874,5 +875,5 @@ module public ConnectionNOnion =
 
         let nonionTransportListener = NOnionTransportListener.Bind nodeMasterPrivKey bindAddress
         let transportListener = TransportListener.Bind nodeMasterPrivKey bindAddress
-        new NodeServer (channelStore, transportListener)
+        new NodeServer (channelStore, transportListener, Some nonionTransportListener)
 

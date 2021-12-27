@@ -148,7 +148,7 @@ type internal NOnionTransportListener =
         let RetryCount = 10
         let directory = TorDirectory.Bootstrap(endpoint) |> Async.RunSynchronously
         let host = TorServiceHost(directory, RetryCount)
-        host.StartAsync() |> ignore
+        host.Start()
 
         {
             NodeMasterPrivKey = nodeMasterPrivKey
