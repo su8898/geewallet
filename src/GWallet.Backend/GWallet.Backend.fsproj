@@ -118,10 +118,10 @@
       <HintPath>..\..\packages\Portable.BouncyCastle.1.8.10\lib\net40\BouncyCastle.Crypto.dll</HintPath>
     </Reference>
     <Reference Include="Chaos.NaCl-Portable">
-      <HintPath>..\..\packages\NOnion.0.1.0--date20211111-0415.git-3a02a40\lib\netstandard2.0\Chaos.NaCl-Portable.dll</HintPath>
+      <HintPath>..\..\packages\NOnion.0.1.0--date20211227-0401.git-bee25ec\lib\netstandard2.0\Chaos.NaCl-Portable.dll</HintPath>
     </Reference>
     <Reference Include="FSharp.Core">
-      <HintPath>..\..\packages\FSharp.Core.5.0.0\lib\netstandard2.0\FSharp.Core.dll</HintPath>
+      <HintPath>..\..\packages\FSharp.Core.4.7.2\lib\net45\FSharp.Core.dll</HintPath>
     </Reference>
     <Reference Include="FSharp.Data">
       <HintPath>..\..\packages\FSharp.Data.3.0.0\lib\net45\FSharp.Data.dll</HintPath>
@@ -152,7 +152,7 @@
       <HintPath>..\..\packages\Nerdbank.Streams.2.6.81\lib\netstandard2.0\Nerdbank.Streams.dll</HintPath>
     </Reference>
     <Reference Include="NOnion">
-      <HintPath>..\..\packages\NOnion.0.1.0--date20211111-0415.git-3a02a40\lib\netstandard2.0\NOnion.dll</HintPath>
+      <HintPath>..\..\packages\NOnion.0.1.0--date20211227-0401.git-bee25ec\lib\netstandard2.0\NOnion.dll</HintPath>
     </Reference>
     <Reference Include="StreamJsonRpc">
       <HintPath>..\..\packages\StreamJsonRpc.2.8.21\lib\netstandard2.0\StreamJsonRpc.dll</HintPath>
