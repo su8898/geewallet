@@ -3,9 +3,10 @@ namespace GWallet.Backend.UtxoCoin.Lightning
 open System
 open System.Net
 
+open NOnion.Services
+
 open GWallet.Backend
 open GWallet.Backend.FSharpUtil.UwpHacks
-
 
 type NodeEndPoint =
     {

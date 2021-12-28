@@ -128,7 +128,8 @@ type LN() =
 
     let ClientCloseChannel (clientWallet: ClientWalletInstance) (bitcoind: Bitcoind) channelId =
         async {
-            let! closeChannelRes = Lightning.Network.CloseChannel clientWallet.NodeClient channelId
+            // TODO: pass appropriate nonionIntroductionPoint
+            let! closeChannelRes = Lightning.Network.CloseChannel clientWallet.NodeClient channelId None
             match closeChannelRes with
             | Ok _ -> ()
             | Error err -> failwith (SPrintF1 "error when closing channel: %s" (err :> IErrorMsg).Message)
@@ -478,7 +479,8 @@ type LN() =
                 )
                 failwith "unreachable"
 
-        let! closeChannelRes = Lightning.Network.CloseChannel clientWallet.NodeClient channelId
+        // TODO: pass appropriate nonionIntroductionPoint
+        let! closeChannelRes = Lightning.Network.CloseChannel clientWallet.NodeClient channelId None
         match closeChannelRes with
         | Ok _ -> ()
         | Error err -> failwith (SPrintF1 "error when closing channel: %s" (err :> IErrorMsg).Message)
@@ -1009,7 +1011,7 @@ type LN() =
         let! pendingChannelRes =
             Lightning.Network.OpenChannel
                 walletInstance.NodeClient
-                Config.FundeeNodeEndpoint
+                (NodeIdentifier.EndPoint Config.FundeeNodeEndpoint)
                 transferAmount
         let pendingChannel = UnwrapResult pendingChannelRes "OpenChannel failed"
         let minimumDepth = (pendingChannel :> IChannelToBeOpened).ConfirmationsRequired
@@ -1038,8 +1040,8 @@ type LN() =
                     return ()
             }
             waitForFundingConfirmed()
-
-        let! lockFundingRes = Lightning.Network.ConnectLockChannelFunding walletInstance.NodeClient channelId
+        // TODO: add proper argument for nOnionIntroductionPointInfo
+        let! lockFundingRes = Lightning.Network.ConnectLockChannelFunding walletInstance.NodeClient channelId None
         UnwrapResult lockFundingRes "LockChannelFunding failed"
 
         let channelInfo = walletInstance.ChannelStore.ChannelInfo channelId

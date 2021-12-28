@@ -170,46 +170,54 @@ type Lnd = {
         }
 
 
-    member self.ConnectTo (nodeEndPoint: NodeEndPoint): Async<unit> =
-        let client = self.Client()
-        let nodeInfo =
-            let pubKey =
-                let stringified = nodeEndPoint.NodeId.ToString()
-                let unstringified = PubKey stringified
-                unstringified
-            NodeInfo (pubKey, nodeEndPoint.IPEndPoint.Address.ToString(), nodeEndPoint.IPEndPoint.Port)
-        async {
-            let! connResult =
-                (client :> ILightningClient).ConnectTo nodeInfo
-                |> Async.AwaitTask
-            match connResult with
-            | ConnectionResult.CouldNotConnect ->
-                return failwith "could not connect"
-            | _ ->
-                return ()
-        }
+    member self.ConnectTo (maybeNodeEndPoint: Option<NodeEndPoint>): Async<unit> =
+        match maybeNodeEndPoint with
+        | Some nodeEndPoint ->
+            let client = self.Client()
+            let nodeInfo =
+                let pubKey =
+                    let stringified = nodeEndPoint.NodeId.ToString()
+                    let unstringified = PubKey stringified
+                    unstringified
+                NodeInfo (pubKey, nodeEndPoint.IPEndPoint.Address.ToString(), nodeEndPoint.IPEndPoint.Port)
+            async {
+                let! connResult =
+                    (client :> ILightningClient).ConnectTo nodeInfo
+                    |> Async.AwaitTask
+                match connResult with
+                | ConnectionResult.CouldNotConnect ->
+                    return failwith "could not connect"
+                | _ ->
+                    return ()
+            }
+        | _ -> failwith "could not connect"
 
-    member self.OpenChannel (nodeEndPoint: NodeEndPoint)
+    member self.OpenChannel (maybeNodeEndPoint: Option<NodeEndPoint>)
                             (amount: Money)
                             (feeRate: FeeRatePerKw)
                                 : Async<Result<unit, OpenChannelResult>> = async {
-        let client = self.Client()
-        let nodeInfo =
-            let pubKey =
-                let stringified = nodeEndPoint.NodeId.ToString()
-                let unstringified = PubKey stringified
-                unstringified
-            NodeInfo (pubKey, nodeEndPoint.IPEndPoint.Address.ToString(), nodeEndPoint.IPEndPoint.Port)
-        let openChannelReq =
-            new OpenChannelRequest (
-                NodeInfo = nodeInfo,
-                ChannelAmount = amount,
-                FeeRate = new FeeRate(Money(uint64 feeRate.Value))
-            )
-        let! openChannelResponse = Async.AwaitTask <| (client :> ILightningClient).OpenChannel openChannelReq
-        match openChannelResponse.Result with
-        | OpenChannelResult.Ok -> return Ok ()
-        | err -> return Error err
+        match maybeNodeEndPoint with
+        | Some nodeEndPoint ->
+            let client = self.Client()
+            let nodeInfo =
+                let pubKey =
+                    let stringified = nodeEndPoint.NodeId.ToString()
+                    let unstringified = PubKey stringified
+                    unstringified
+                NodeInfo (pubKey, nodeEndPoint.IPEndPoint.Address.ToString(), nodeEndPoint.IPEndPoint.Port)
+            let openChannelReq =
+                new OpenChannelRequest (
+                    NodeInfo = nodeInfo,
+                    ChannelAmount = amount,
+                    FeeRate = new FeeRate(Money(uint64 feeRate.Value))
+                )
+            let! openChannelResponse = Async.AwaitTask <| (client :> ILightningClient).OpenChannel openChannelReq
+            match openChannelResponse.Result with
+            | OpenChannelResult.Ok -> return Ok ()
+            | err -> return Error err
+        | _ ->
+            // TODO: add proper error message
+            return failwith "node endpoint null"
     }
 
     member self.CloseChannel (fundingOutPoint: OutPoint)

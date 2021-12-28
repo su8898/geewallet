@@ -58,5 +58,6 @@ module public Network =
     let public AcceptLockChannelFunding (nodeServer: NodeServer) = nodeServer.AcceptLockChannelFunding
 
     let public EndPoint (nodeServer: NodeServer) = nodeServer.EndPoint
+    let public TorEndPoint (nodeServer: NodeServer) = nodeServer.TorEndPoint
 
     let public AcceptUpdateFee (lightningNode: NodeServer) = lightningNode.AcceptUpdateFee
