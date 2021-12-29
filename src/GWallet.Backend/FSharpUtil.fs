@@ -190,6 +190,36 @@ module FSharpUtil =
                 return allJobsStarted
             }
 
+        type private SuccessException<'T>(value : 'T) =
+               inherit Exception()
+               member self.Value = value
+
+           type Microsoft.FSharp.Control.Async with
+               // efficient raise
+               static member Raise (e : #exn) = Async.FromContinuations(fun (_,econt,_) -> econt e)
+
+               static member Choice<'T>(tasks : seq<Async<'T option>>) : Async<'T option> =
+                   let wrap task =
+                       async {
+                           let! res = task
+                           match res with
+                           | None -> return None
+                           | Some r -> return! Async.Raise <| SuccessException r
+                       }
+
+                   async {
+                       try
+                           do!
+                               tasks
+                               |> Seq.map wrap
+                               |> Async.Parallel
+                               |> Async.Ignore
+
+                           return None
+                       with
+                       | :? SuccessException<'T> as ex -> return Some ex.Value
+                   }
+
     let rec private ListIntersectInternal list1 list2 offset acc currentIndex =
         match list1,list2 with
         | [],[] -> List.rev acc
