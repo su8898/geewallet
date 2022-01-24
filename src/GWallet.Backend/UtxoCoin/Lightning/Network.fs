@@ -620,7 +620,6 @@ type internal TransportStream =
             let stream = tcpClient.GetStream()
             do! stream.WriteAsync(ciphertext, 0, ciphertext.Length) |> Async.AwaitTask
         | TransportStreamClientType.TorClientStream stream ->
-            // TODO: verify if this is right?
             do! stream.SendData(ciphertext)
         return { self with Peer = peerAfterBytesSent }
     }

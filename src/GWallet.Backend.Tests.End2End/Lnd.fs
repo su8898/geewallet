@@ -170,27 +170,24 @@ type Lnd = {
         }
 
 
-    member self.ConnectTo (maybeNodeEndPoint: Option<NodeEndPoint>): Async<unit> =
-        match maybeNodeEndPoint with
-        | Some nodeEndPoint ->
-            let client = self.Client()
-            let nodeInfo =
-                let pubKey =
-                    let stringified = nodeEndPoint.NodeId.ToString()
-                    let unstringified = PubKey stringified
-                    unstringified
-                NodeInfo (pubKey, nodeEndPoint.IPEndPoint.Address.ToString(), nodeEndPoint.IPEndPoint.Port)
-            async {
-                let! connResult =
-                    (client :> ILightningClient).ConnectTo nodeInfo
-                    |> Async.AwaitTask
-                match connResult with
-                | ConnectionResult.CouldNotConnect ->
-                    return failwith "could not connect"
-                | _ ->
-                    return ()
-            }
-        | _ -> failwith "could not connect"
+    member self.ConnectTo (nodeEndPoint: NodeEndPoint): Async<unit> =
+        let client = self.Client()
+        let nodeInfo =
+            let pubKey =
+                let stringified = nodeEndPoint.NodeId.ToString()
+                let unstringified = PubKey stringified
+                unstringified
+            NodeInfo (pubKey, nodeEndPoint.IPEndPoint.Address.ToString(), nodeEndPoint.IPEndPoint.Port)
+        async {
+            let! connResult =
+                (client :> ILightningClient).ConnectTo nodeInfo
+                |> Async.AwaitTask
+            match connResult with
+            | ConnectionResult.CouldNotConnect ->
+                return failwith "could not connect"
+            | _ ->
+                return ()
+        }
 
     member self.OpenChannel (maybeNodeEndPoint: Option<NodeEndPoint>)
                             (amount: Money)

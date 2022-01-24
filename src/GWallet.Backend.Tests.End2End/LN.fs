@@ -70,12 +70,16 @@ type LN() =
             let! feeRate = ElectrumServer.EstimateFeeRate()
             let acceptChannelTask = Lightning.Network.AcceptChannel serverWallet.NodeServer
             let openChannelTask = async {
-                do! lnd.ConnectTo serverWallet.NodeEndPoint
-                return!
-                    lnd.OpenChannel
-                        serverWallet.NodeEndPoint
-                        (Money(0.002m, MoneyUnit.BTC))
-                        feeRate
+                match serverWallet.NodeEndPoint with
+                | Some endPoint ->
+                    do! lnd.ConnectTo endPoint
+                    return!
+                        lnd.OpenChannel
+                            serverWallet.NodeEndPoint
+                            (Money(0.002m, MoneyUnit.BTC))
+                            feeRate
+                | None ->
+                    return failwith "could not connect. nodeendpoint is null"
             }
 
             let! acceptChannelRes, openChannelRes = AsyncExtensions.MixedParallel2 acceptChannelTask openChannelTask
@@ -543,10 +547,14 @@ type LN() =
             let fundingOutPointIndex = channelInfo.FundingOutPointIndex
             OutPoint(fundingTxId, fundingOutPointIndex)
         let closeChannelTask = async {
-            do! lnd.ConnectTo serverWallet.NodeEndPoint
-            do! Async.Sleep 1000
-            do! lnd.CloseChannel fundingOutPoint
-            return ()
+            match serverWallet.NodeEndPoint with
+            | Some endPoint ->
+                do! lnd.ConnectTo endPoint
+                do! Async.Sleep 1000
+                do! lnd.CloseChannel fundingOutPoint
+                return ()
+            | None ->
+                failwith "could not connect. nodeendpoint is null"
         }
         let awaitCloseTask = async {
             let rec receiveEvent () = async {
