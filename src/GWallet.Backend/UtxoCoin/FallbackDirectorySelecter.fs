@@ -1,4 +1,4 @@
-﻿namespace GWallet.Backend.UtxoCoin.Lightning
+﻿namespace GWallet.Backend.UtxoCoin
 
 open System
 open System.Collections.Generic
@@ -6,7 +6,7 @@ open System.Linq
 open System.Net
 
 module internal FallbackDirectorySelector =
-    let fallbackDirectories =        
+    let fallbackDirectories =
         [
             "62.210.105.46:9001";
             "95.128.43.164:443";

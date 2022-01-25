@@ -73,6 +73,8 @@
     <Compile Include="UtxoCoin\UtxoCoinServer.fs" />
     <Compile Include="UtxoCoin\UtxoCoinMinerFee.fs" />
     <Compile Include="UtxoCoin\TransactionTypes.fs" />
+    <Compile Include="UtxoCoin\FallbackDirectorySelecter.fs" />
+    <Compile Include="UtxoCoin\TorOperations.fs" />
     <Compile Include="UtxoCoin\UtxoCoinAccount.fs" />
     <Compile Include="UtxoCoin\Lightning\FeeEstimator.fs" />
     <Compile Include="UtxoCoin\Lightning\Settings.fs" />
@@ -87,7 +89,6 @@
     <Compile Include="UtxoCoin\Lightning\ForceCloseTransaction.fs" />
     <Compile Include="UtxoCoin\Lightning\BreachDataManagement.fs" />
     <Compile Include="UtxoCoin\Lightning\Watcher\TowerClient.fs" />
-    <Compile Include="UtxoCoin\Lightning\FallbackDirectorySelector.fs" />
     <Compile Include="UtxoCoin\Lightning\Network.fs" />
     <Compile Include="UtxoCoin\Lightning\MsgStream.fs" />
     <Compile Include="UtxoCoin\Lightning\PeerNode.fs" />

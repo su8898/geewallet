@@ -823,7 +823,7 @@ module UserInteraction =
     let rec internal AskConnectionString nodeServerType currency: Option<NodeNOnionIntroductionPoint> =
         match nodeServerType with
         | NodeServerType.Tor ->
-            let getNodeType (currency: Currency) (text: string): Option<NodeNOnionIntroductionPoint> =
+            let getNodeType currency text =
                 if text = String.Empty then
                     None
                 else

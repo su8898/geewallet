@@ -15,6 +15,7 @@ open NOnion.Directory
 open NOnion.Services
 
 open GWallet.Backend
+open GWallet.Backend.UtxoCoin
 open GWallet.Backend.FSharpUtil
 open GWallet.Backend.FSharpUtil.UwpHacks
 
@@ -142,31 +143,10 @@ type internal TransportListener =
                 }
             | None -> return failwith "tcp endpoint cannot be null"
         | NodeServerType.Tor ->
+            // TODO: where must this come from? is the number of retries arbitrary?
             let retryCount = 10
-            let rec tryGetDirectory retryCount =
-                async {
-                    try
-                        return! TorDirectory.Bootstrap (FallbackDirectorySelector.GetRandomFallbackDirectory())
-                    with
-                    | :? NOnion.NOnionException as ex ->
-                        if retryCount = 0 then
-                            return raise <| FSharpUtil.ReRaise ex
-                        return! tryGetDirectory (retryCount - 1)
-                }
-            let! directory = tryGetDirectory retryCount
-            let rec tryStart retryCount =
-                async {
-                    try
-                        let host = TorServiceHost(directory, retryCount)
-                        do! host.Start()
-                        return host
-                    with
-                    | :? NOnion.NOnionException as ex ->
-                        if retryCount = 0 then
-                            return raise <| FSharpUtil.ReRaise ex
-                        return! tryStart (retryCount - 1)
-                }
-            let! host = tryStart retryCount
+            let! directory = TorOperations.GetTorDirectory retryCount
+            let! host = TorOperations.StartTorServiceHost directory retryCount
 
             let exportedConnectionDetail = host.Export()
             
@@ -176,7 +156,7 @@ type internal TransportListener =
                 NodeServerType = nodeServerType
                 ConnectionDetail = Some exportedConnectionDetail
             }
-            }
+        }
 
     member internal self.LocalIPEndPoint: Option<IPEndPoint> =
         match self.Listener with
@@ -255,13 +235,16 @@ type internal TransportStream =
             | TransportStreamClientType.Client tcpClient ->
                 tcpClient.Close()
             | TransportStreamClientType.TorClientStream _torStream ->
-                // TODO: no close/disconnect or dispose method found in TorServiceClient type
+                (*
+                    FIXME: torStream.End() is an async method so it cannot be called here.
+                    self.Close() method must be called in order to close/end the torStream.
+                *)
                 ()
 
     member self.Close() = async {
         match self.Client with
-        | TransportStreamClientType.Client tcpClient ->
-            tcpClient.Close()
+        | TransportStreamClientType.Client _tcpClient ->
+            ()
         | TransportStreamClientType.TorClientStream torStream ->
             do! torStream.End()
     }
@@ -282,11 +265,9 @@ type internal TransportStream =
                 async {
                     match stream with
                     | StreamType.TcpNetworkStream tcpStream ->
-                        let task = (tcpStream.ReadAsync(buf, totalBytesRead, (numberBytesToRead - totalBytesRead)))
-                        return! Async.AwaitTask task
+                        return! tcpStream.ReadAsync(buf, totalBytesRead, numberBytesToRead - totalBytesRead) |> Async.AwaitTask
                     | StreamType.TorClientStream torStream ->
-                        let! bytesLength = torStream.Receive buf totalBytesRead (numberBytesToRead - totalBytesRead)
-                        return bytesLength
+                        return! torStream.Receive buf totalBytesRead (numberBytesToRead - totalBytesRead)
                 }
             async {
                 let! maybeBytesRead =
@@ -347,35 +328,14 @@ type internal TransportStream =
                 let socketExceptions = FindSingleException<SocketException> ex
                 return Error socketExceptions
         | NodeIdentifier.NOnionIntroductionPoint nonionIntroductionPoint ->
-            //let directoryIpEndpoint = FallbackDirectorySelector.GetRandomFallbackDirectory() //((IPAddress.Parse nonionIntroductionPoint.IntroductionPointPublicInfo.Address, nonionIntroductionPoint.IntroductionPointPublicInfo.Port) |> IPEndPoint)
-            let directoryIpEndpoint = ((IPAddress.Parse nonionIntroductionPoint.IntroductionPointPublicInfo.Address, nonionIntroductionPoint.IntroductionPointPublicInfo.Port) |> IPEndPoint)
-            Infrastructure.LogDebug <| SPrintF1 "Connecting over TOR to %A..." directoryIpEndpoint
+            let introductionIpEndPoint = ((IPAddress.Parse nonionIntroductionPoint.IntroductionPointPublicInfo.Address, nonionIntroductionPoint.IntroductionPointPublicInfo.Port) |> IPEndPoint)
+            Infrastructure.LogDebug <| SPrintF1 "Connecting over TOR to %A..." introductionIpEndPoint
+
+            // TODO: where must this come from? is the number of retries arbitrary?
             let retryCount = 10
-            let rec tryGetDirectory retryCount =
-               async {
-                   try
-                       return! TorDirectory.Bootstrap (FallbackDirectorySelector.GetRandomFallbackDirectory())
-                   with
-                   | :? NOnion.NOnionException as ex ->
-                       if retryCount = 0 then
-                           return raise <| FSharpUtil.ReRaise ex
-                       return! tryGetDirectory (retryCount - 1)
-               }
-            let! directory = tryGetDirectory retryCount
-
-            let rec tryConnect retryCount =
-               async {
-                   try
-                       return! TorServiceClient.Connect directory nonionIntroductionPoint.IntroductionPointPublicInfo
-                   with
-                   | :? NOnion.NOnionException as ex ->
-                       if retryCount = 0 then
-                           return raise <| FSharpUtil.ReRaise ex
-                       return! tryConnect (retryCount - 1)
-               }
-
+            let! directory = TorOperations.GetTorDirectory retryCount
             try
-                let! torClient = tryConnect retryCount
+                let! torClient = TorOperations.TorConnect directory retryCount nonionIntroductionPoint.IntroductionPointPublicInfo
                 Infrastructure.LogDebug <| SPrintF1 "Connected %s" nonionIntroductionPoint.IntroductionPointPublicInfo.Address
                 return Ok (TransportStreamClientType.TorClientStream (torClient.GetStream()))
             with
@@ -620,7 +580,7 @@ type internal TransportStream =
             let stream = tcpClient.GetStream()
             do! stream.WriteAsync(ciphertext, 0, ciphertext.Length) |> Async.AwaitTask
         | TransportStreamClientType.TorClientStream stream ->
-            do! stream.SendData(ciphertext)
+            do! stream.SendData ciphertext
         return { self with Peer = peerAfterBytesSent }
     }
 
