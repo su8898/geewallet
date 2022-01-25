@@ -325,27 +325,34 @@ type LN() =
                 failwith "incorrect balance after receiving payment 2"
         }
 
+    let AddDebugLog (message:string) =
+        Console.WriteLine message
 
     [<Category "G2G_ChannelOpening_Funder">]
     [<Test>]
     member __.``can open channel with geewallet (funder)``() = Async.RunSynchronously <| async {
+        AddDebugLog "Begin: can open channel with geewallet (funder)"
         let! _channelId, clientWallet, bitcoind, electrumServer, lnd, _fundingAmount =
             OpenChannelWithFundee (Some Config.FundeeNodeEndpoint)
 
         TearDown clientWallet lnd electrumServer bitcoind
+        AddDebugLog "End: can open channel with geewallet (funder)"
     }
 
     [<Category "G2G_ChannelOpening_Fundee">]
     [<Test>]
     member __.``can open channel with geewallet (fundee)``() = Async.RunSynchronously <| async {
+        AddDebugLog "Begin: can open channel with geewallet (fundee)"
         let! serverWallet, _channelId = AcceptChannelFromGeewalletFunder ()
 
         (serverWallet :> IDisposable).Dispose()
+        AddDebugLog "End: can open channel with geewallet (fundee)"
     }
 
     [<Category "G2G_ChannelClosingAfterJustOpening_Funder">]
     [<Test>]
     member __.``can close channel with geewallet (funder)``() = Async.RunSynchronously <| async {
+        AddDebugLog "Begin: can close channel with geewallet (funder)"
         let! channelId, clientWallet, bitcoind, electrumServer, lnd, _fundingAmount =
             try
                 OpenChannelWithFundee (Some Config.FundeeNodeEndpoint)
@@ -361,22 +368,26 @@ type LN() =
         do! ClientCloseChannel clientWallet bitcoind channelId
 
         TearDown clientWallet lnd electrumServer bitcoind
+        AddDebugLog "End: can close channel with geewallet (funder)"
     }
 
     [<Category "G2G_ChannelClosingAfterJustOpening_Fundee">]
     [<Test>]
     member __.``can close channel with geewallet (fundee)``() = Async.RunSynchronously <| async {
+        AddDebugLog "Begin: can close channel with geewallet (fundee)"
         let! serverWallet, channelId = AcceptChannelFromGeewalletFunder ()
 
         let! closeChannelRes = Lightning.Network.AcceptCloseChannel serverWallet.NodeServer channelId
         match closeChannelRes with
         | Ok _ -> ()
         | Error err -> failwith (SPrintF1 "failed to accept close channel: %A" err)
+        AddDebugLog "End: can close channel with geewallet (fundee)"
     }
 
     [<Category "G2G_MonoHopUnidirectionalPayments_Funder">]
     [<Test>]
     member __.``can send monohop payments (funder)``() = Async.RunSynchronously <| async {
+        AddDebugLog "Begin: can send monohop payments (funder)"
         let! channelId, clientWallet, bitcoind, electrumServer, lnd, fundingAmount =
             try
                 OpenChannelWithFundee (Some Config.FundeeNodeEndpoint)
@@ -392,22 +403,26 @@ type LN() =
         do! SendMonoHopPayments clientWallet channelId fundingAmount
 
         TearDown clientWallet lnd electrumServer bitcoind
+        AddDebugLog "End: can send monohop payments (funder)"
     }
 
 
     [<Category "G2G_MonoHopUnidirectionalPayments_Fundee">]
     [<Test>]
     member __.``can receive mono-hop unidirectional payments, with geewallet (fundee)``() = Async.RunSynchronously <| async {
+        AddDebugLog "Begin: can receive mono-hop unidirectional payments, with geewallet (fundee)"
         let! serverWallet, channelId = AcceptChannelFromGeewalletFunder ()
 
         do! ReceiveMonoHopPayments serverWallet channelId
 
         (serverWallet :> IDisposable).Dispose()
+        AddDebugLog "End: can receive mono-hop unidirectional payments, with geewallet (fundee)"
     }
 
     [<Category "G2G_ChannelClosingAfterSendingMonoHopPayments_Funder">]
     [<Test>]
     member __.``can close channel after sending monohop payments (funder)``() = Async.RunSynchronously <| async {
+        AddDebugLog "Begin: can close channel after sending monohop payments (funder)"
         let! channelId, clientWallet, bitcoind, electrumServer, lnd, fundingAmount =
             try
                 OpenChannelWithFundee (Some Config.FundeeNodeEndpoint)
@@ -434,12 +449,14 @@ type LN() =
         do! ClientCloseChannel clientWallet bitcoind channelId
 
         TearDown clientWallet lnd electrumServer bitcoind
+        AddDebugLog "End: can close channel after sending monohop payments (funder)"
     }
 
 
     [<Category "G2G_ChannelClosingAfterSendingMonoHopPayments_Fundee">]
     [<Test>]
     member __.``can close channel after receiving mono-hop unidirectional payments, with geewallet (fundee)``() = Async.RunSynchronously <| async {
+        AddDebugLog "Begin: can close channel after receiving mono-hop unidirectional payments, with geewallet (fundee)"
         let! serverWallet, channelId = AcceptChannelFromGeewalletFunder ()
 
         do! ReceiveMonoHopPayments serverWallet channelId
@@ -450,27 +467,33 @@ type LN() =
         | Error err -> failwith (SPrintF1 "failed to accept close channel: %A" err)
 
         (serverWallet :> IDisposable).Dispose()
+        AddDebugLog "End: can close channel after receiving mono-hop unidirectional payments, with geewallet (fundee)"
     }
 
     [<Test>]
     member __.``can open channel with LND``() = Async.RunSynchronously <| async {
+        AddDebugLog "Begin: can open channel with LND"
         let! _channelId, clientWallet, bitcoind, electrumServer, lnd, _fundingAmount = OpenChannelWithFundee None
 
         TearDown clientWallet lnd electrumServer bitcoind
+        AddDebugLog "End: can open channel with LND"
     }
 
     [<Test>]
     member __.``can open channel with LND and send htlcs``() = Async.RunSynchronously <| async {
+        AddDebugLog "Begin: can open channel with LND and send htlcs"
         let! channelId, clientWallet, bitcoind, electrumServer, lnd, fundingAmount = OpenChannelWithFundee None
 
         do! SendHtlcPaymentsToLnd clientWallet lnd channelId fundingAmount
 
         TearDown clientWallet lnd electrumServer bitcoind
+        AddDebugLog "End: can open channel with LND and send htlcs"
     }
 
 
     [<Test>]
     member __.``can close channel with LND``() = Async.RunSynchronously <| async {
+        AddDebugLog "Begin: can close channel with LND"
         let! channelId, clientWallet, bitcoind, electrumServer, lnd, _fundingAmount =
             try
                 OpenChannelWithFundee None
@@ -515,17 +538,21 @@ type LN() =
         | Error err -> failwith (SPrintF1 "error when waiting for closing tx to confirm: %s" err)
 
         TearDown clientWallet lnd electrumServer bitcoind
+        AddDebugLog "End: can close channel with LND"
     }
 
     [<Test>]
     member __.``can accept channel from LND``() = Async.RunSynchronously <| async {
+        AddDebugLog "Begin: can accept channel from LND"
         let! _channelId, serverWallet, bitcoind, electrumServer, lnd = AcceptChannelFromLndFunder ()
 
         TearDown serverWallet lnd electrumServer bitcoind
+        AddDebugLog "End: can accept channel from LND"
     }
 
     [<Test>]
     member __.``can accept channel closure from LND``() = Async.RunSynchronously <| async {
+        AddDebugLog "Begin: can accept channel closure from LND"
         let! channelId, serverWallet, bitcoind, electrumServer, lnd =
             try
                 AcceptChannelFromLndFunder ()
@@ -583,6 +610,7 @@ type LN() =
         let! (), () = AsyncExtensions.MixedParallel2 closeChannelTask awaitCloseTask
 
         TearDown serverWallet lnd electrumServer bitcoind
+        AddDebugLog "End: can accept channel closure from LND"
 
         return ()
     }
@@ -590,6 +618,7 @@ type LN() =
     [<Category "G2G_ChannelLocalForceClosing_Funder">]
     [<Test>]
     member __.``can send monohop payments and handle local force-close of channel (funder)``() = Async.RunSynchronously <| async {
+        AddDebugLog "Begin: can send monohop payments and handle local force-close of channel (funder)"
         let! channelId, clientWallet, bitcoind, electrumServer, lnd, fundingAmount =
             try
                 OpenChannelWithFundee (Some Config.FundeeNodeEndpoint)
@@ -654,11 +683,13 @@ type LN() =
             clientWallet.WaitForBalance amount
 
         TearDown clientWallet lnd electrumServer bitcoind
+        AddDebugLog "End: can send monohop payments and handle local force-close of channel (funder)"
     }
 
     [<Category "G2G_ChannelLocalForceClosing_Fundee">]
     [<Test>]
     member __.``can receive monohop payments and handle local force-close of channel (fundee)``() = Async.RunSynchronously <| async {
+        AddDebugLog "Begin: can receive monohop payments and handle local force-close of channel (fundee)"
         let! serverWallet, channelId =
             try
                 AcceptChannelFromGeewalletFunder ()
@@ -682,12 +713,14 @@ type LN() =
             )
             failwith "unreachable"
 
+        AddDebugLog "End: can receive monohop payments and handle local force-close of channel (fundee)"
         (serverWallet :> IDisposable).Dispose()
     }
 
     [<Category "G2G_ChannelRemoteForceClosingByFunder_Funder">]
     [<Test>]
     member __.``can send monohop payments and handle remote force-close of channel by funder (funder)``() = Async.RunSynchronously <| async {
+        AddDebugLog "Begin: can send monohop payments and handle remote force-close of channel by funder (funder)"
         let! channelId, clientWallet, bitcoind, electrumServer, lnd, fundingAmount =
             try
                 OpenChannelWithFundee (Some Config.FundeeNodeEndpoint)
@@ -762,11 +795,13 @@ type LN() =
         do! Async.Sleep 3000
 
         TearDown clientWallet lnd electrumServer bitcoind
+        AddDebugLog "End: can send monohop payments and handle remote force-close of channel by funder (funder)"
     }
 
     [<Category "G2G_ChannelRemoteForceClosingByFunder_Fundee">]
     [<Test>]
     member __.``can receive monohop payments and handle remote force-close of channel by funder (fundee)``() = Async.RunSynchronously <| async {
+        AddDebugLog "Begin: can receive monohop payments and handle remote force-close of channel by funder (fundee)"
         let! serverWallet, channelId =
             try
                 AcceptChannelFromGeewalletFunder ()
@@ -818,11 +853,13 @@ type LN() =
             serverWallet.WaitForBalance amount
 
         (serverWallet :> IDisposable).Dispose()
+        AddDebugLog "End: can receive monohop payments and handle remote force-close of channel by funder (fundee)"
     }
 
     [<Category "G2G_ChannelRemoteForceClosingByFundee_Funder">]
     [<Test>]
     member __.``can send monohop payments and handle remote force-close of channel by fundee (funder)``() = Async.RunSynchronously <| async {
+        AddDebugLog "Begin: can send monohop payments and handle remote force-close of channel by fundee (funder)"
         let! channelId, clientWallet, bitcoind, electrumServer, lnd, fundingAmount =
             try
                 OpenChannelWithFundee (Some Config.FundeeNodeEndpoint)
@@ -899,11 +936,13 @@ type LN() =
         do! Async.Sleep 10000
 
         TearDown clientWallet lnd electrumServer bitcoind
+        AddDebugLog "End: can send monohop payments and handle remote force-close of channel by fundee (funder)"
     }
 
     [<Category "G2G_ChannelRemoteForceClosingByFundee_Fundee">]
     [<Test>]
     member __.``can receive monohop payments and handle remote force-close of channel by fundee (fundee)``() = Async.RunSynchronously <| async {
+        AddDebugLog "Begin: can receive monohop payments and handle remote force-close of channel by fundee (fundee)"
         let! serverWallet, channelId =
             try
                 AcceptChannelFromGeewalletFunder ()
@@ -958,11 +997,13 @@ type LN() =
             serverWallet.WaitForBalance amount
 
         (serverWallet :> IDisposable).Dispose()
+        AddDebugLog "End: can receive monohop payments and handle remote force-close of channel by fundee (fundee)"
     }
 
     [<Category "G2G_Revocation_Funder">]
     [<Test>]
     member __.``can revoke commitment tx (funder)``() = Async.RunSynchronously <| async {
+        AddDebugLog "Begin: can revoke commitment tx (funder)"
         use! walletInstance = ClientWalletInstance.New None
         use! bitcoind = Bitcoind.Start()
         use! _electrumServer = ElectrumServer.Start bitcoind
@@ -1149,12 +1190,14 @@ type LN() =
         // give the fundee plenty of time to see that their tx was mined
         do! Async.Sleep 10000
 
+        AddDebugLog "End: can revoke commitment tx (funder)"
         return ()
     }
 
     [<Category "G2G_Revocation_Fundee">]
     [<Test>]
     member __.``can revoke commitment tx (fundee)``() = Async.RunSynchronously <| async {
+        AddDebugLog "Begin: can revoke commitment tx (fundee)"
         use! walletInstance = ServerWalletInstance.New Config.FundeeLightningIPEndpoint (Some Config.FundeeAccountsPrivateKey)
         let! pendingChannelRes =
             Lightning.Network.AcceptChannel
@@ -1215,12 +1258,15 @@ type LN() =
             let amount = Money(1.0m, MoneyUnit.Satoshi)
             walletInstance.WaitForBalance amount
 
+        AddDebugLog "End: can revoke commitment tx (fundee)"
         return ()
     }
 
     [<Category "G2G_CPFP_Funder">]
     [<Test>]
     member __.``CPFP is used when force-closing channel (funder)``() = Async.RunSynchronously <| async {
+        AddDebugLog "Begin: CPFP is used when force-closing channel (funder)"
+
         let! channelId, clientWallet, bitcoind, electrumServer, lnd, fundingAmount =
             try
                 OpenChannelWithFundee (Some Config.FundeeNodeEndpoint)
@@ -1262,11 +1308,13 @@ type LN() =
         do! Async.Sleep 5000
 
         TearDown clientWallet lnd electrumServer bitcoind
+        AddDebugLog "End: CPFP is used when force-closing channel (funder)"
     }
 
     [<Category "G2G_CPFP_Fundee">]
     [<Test>]
     member __.``CPFP is used when force-closing channel (fundee)``() = Async.RunSynchronously <| async {
+        AddDebugLog "Begin: CPFP is used when force-closing channel (fundee)"
         let! serverWallet, channelId =
             try
                 AcceptChannelFromGeewalletFunder ()
@@ -1359,11 +1407,13 @@ type LN() =
         assert FeesHelper.FeeRatesApproxEqual combinedFeeRateWithCpfp newFeeRate
 
         (serverWallet :> IDisposable).Dispose()
+        AddDebugLog "End: CPFP is used when force-closing channel (fundee)"
     }
 
     [<Category "G2G_UpdateFeeMsg_Funder">]
     [<Test>]
     member __.``can update fee after sending monohop payments (funder)``() = Async.RunSynchronously <| async {
+        AddDebugLog "Begin: can update fee after sending monohop payments (funder)"
         let! channelId, clientWallet, bitcoind, electrumServer, lnd, fundingAmount =
             try
                 OpenChannelWithFundee (Some Config.FundeeNodeEndpoint)
@@ -1411,11 +1461,13 @@ type LN() =
         do! ClientCloseChannel clientWallet bitcoind channelId
 
         TearDown clientWallet lnd electrumServer bitcoind
+        AddDebugLog "End: can update fee after sending monohop payments (funder)"
     }
 
     [<Category "G2G_UpdateFeeMsg_Fundee">]
     [<Test>]
     member __.``can accept fee update after receiving mono-hop unidirectional payments, with geewallet (fundee)``() = Async.RunSynchronously <| async {
+        AddDebugLog "Begin: can accept fee update after receiving mono-hop unidirectional payments, with geewallet (fundee)"
         let! serverWallet, channelId =
             try
                 AcceptChannelFromGeewalletFunder ()
@@ -1463,5 +1515,6 @@ type LN() =
         | Error err -> failwith (SPrintF1 "failed to accept close channel: %A" err)
 
         (serverWallet :> IDisposable).Dispose()
+        AddDebugLog "End: can accept fee update after receiving mono-hop unidirectional payments, with geewallet (fundee)"
     }
 
