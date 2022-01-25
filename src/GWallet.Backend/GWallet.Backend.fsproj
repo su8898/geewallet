@@ -73,7 +73,7 @@
     <Compile Include="UtxoCoin\UtxoCoinServer.fs" />
     <Compile Include="UtxoCoin\UtxoCoinMinerFee.fs" />
     <Compile Include="UtxoCoin\TransactionTypes.fs" />
-    <Compile Include="UtxoCoin\FallbackDirectorySelecter.fs" />
+    <Compile Include="UtxoCoin\FallbackDirectorySelector.fs" />
     <Compile Include="UtxoCoin\TorOperations.fs" />
     <Compile Include="UtxoCoin\UtxoCoinAccount.fs" />
     <Compile Include="UtxoCoin\Lightning\FeeEstimator.fs" />
