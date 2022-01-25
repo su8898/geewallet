@@ -53,6 +53,12 @@ module FSharpUtil =
         let SPrintF5 (fmt: string) (a: Object) (b: Object) (c: Object) (d: Object) (e: Object) =
             String.Format(ToStringFormat fmt, a, b, c, d, e)
 
+        let SPrintF6 (fmt: string) (a: Object) (b: Object) (c: Object) (d: Object) (e: Object) (f: Object) =
+            String.Format(ToStringFormat fmt, a, b, c, d, e, f)
+
+        let SPrintF7 (fmt: string) (a: Object) (b: Object) (c: Object) (d: Object) (e: Object) =
+            String.Format(ToStringFormat fmt, a, b, c, d, e)
+
         let SPrintF8 (fmt: string) (a: Object) (b: Object) (c: Object) (d: Object) (e: Object) (f: Object) (g: Object) (h: Object) =
             String.Format(ToStringFormat fmt, a, b, c, d, e, f, g, h)
 

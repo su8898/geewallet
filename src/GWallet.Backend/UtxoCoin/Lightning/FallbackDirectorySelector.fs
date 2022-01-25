@@ -1,9 +1,9 @@
 ﻿namespace GWallet.Backend.UtxoCoin.Lightning
 
-open System;
-open System.Collections.Generic;
-open System.Linq;
-open System.Net;
+open System
+open System.Collections.Generic
+open System.Linq
+open System.Net
 
 module internal FallbackDirectorySelector =
     let fallbackDirectories =        

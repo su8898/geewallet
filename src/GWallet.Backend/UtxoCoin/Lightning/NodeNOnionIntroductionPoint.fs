@@ -11,8 +11,10 @@ open GWallet.Backend
 open GWallet.Backend.FSharpUtil.UwpHacks
 
 type NodeNOnionIntroductionPoint =
-    { NodeId: PublicKey
-      IntroductionPointPublicInfo: IntroductionPointPublicInfo }
+    {
+        NodeId: PublicKey
+        IntroductionPointPublicInfo: IntroductionPointPublicInfo
+    }
 
     static member IsNOnionConnection(text: string) : bool =
         text.StartsWith "geewallet+nonion://"
@@ -47,7 +49,9 @@ type NodeNOnionIntroductionPoint =
             text.Replace('+','.').Replace('/','_').Replace('=','-')
         let introPoint = self.IntroductionPointPublicInfo
         SPrintF8 "geewallet+nonion://%s@%s:%d?EncryptionKey=%s&AuthKey=%s&OnionKey=%s&Fingerprint=%s&MasterPublicKey=%s"
-            (self.NodeId.ToString()) introPoint.Address introPoint.Port
+            (self.NodeId.ToString())
+            introPoint.Address
+            introPoint.Port
             (replaceForEncode introPoint.EncryptionKey)
             (replaceForEncode introPoint.AuthKey)
             (replaceForEncode self.IntroductionPointPublicInfo.OnionKey)

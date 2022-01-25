@@ -75,7 +75,7 @@ type LN() =
                     do! lnd.ConnectTo endPoint
                     return!
                         lnd.OpenChannel
-                            serverWallet.NodeEndPoint
+                            endPoint
                             (Money(0.002m, MoneyUnit.BTC))
                             feeRate
                 | None ->

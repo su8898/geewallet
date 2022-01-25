@@ -800,8 +800,8 @@ module UserInteraction =
 
     let rec internal AskConnectionType(): Option<NodeServerType> =
         Console.WriteLine "Choose the connection type:"
-        Console.WriteLine "0. TCP"
-        Console.WriteLine "1. Onion"
+        Console.WriteLine "1. TCP"
+        Console.WriteLine "2. Onion"
         Console.Write ": "
         let text = Console.ReadLine().Trim()
         if text = String.Empty then
@@ -809,11 +809,11 @@ module UserInteraction =
         else
             try
                 match text with
-                | "0" ->
-                    Some NodeServerType.Tcp
                 | "1" ->
+                    Some NodeServerType.Tcp
+                | "2" ->
                     Some NodeServerType.Tor
-                | _ -> raise (FormatException("choice must be either 0 or 1"))
+                | _ -> raise (FormatException("choice must be either 1 or 2"))
             with
             | :? FormatException as error ->
                 Console.WriteLine(sprintf "Invalid input. %s" error.Message)

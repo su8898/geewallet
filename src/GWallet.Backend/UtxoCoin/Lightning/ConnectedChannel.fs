@@ -161,7 +161,7 @@ type internal ConnectedChannel =
                 | Some introPint ->
                     NodeIdentifier.NOnionIntroductionPoint introPint
                 | _ ->
-                    (NodeIdentifier.EndPoint {NodeEndPoint.NodeId = PublicKey(nodeId.Value); IPEndPoint = serializedChannel.CounterpartyIP } )
+                    NodeIdentifier.EndPoint { NodeEndPoint.NodeId = PublicKey nodeId.Value; IPEndPoint = serializedChannel.CounterpartyIP }
             PeerNode.Connect nodeMasterPrivKey nodeIdentifier
         match connectRes with
         | Error connectError -> return Error <| Connect connectError

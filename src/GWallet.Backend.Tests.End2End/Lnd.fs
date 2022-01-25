@@ -189,32 +189,27 @@ type Lnd = {
                 return ()
         }
 
-    member self.OpenChannel (maybeNodeEndPoint: Option<NodeEndPoint>)
+    member self.OpenChannel (nodeEndPoint: NodeEndPoint)
                             (amount: Money)
                             (feeRate: FeeRatePerKw)
                                 : Async<Result<unit, OpenChannelResult>> = async {
-        match maybeNodeEndPoint with
-        | Some nodeEndPoint ->
-            let client = self.Client()
-            let nodeInfo =
-                let pubKey =
-                    let stringified = nodeEndPoint.NodeId.ToString()
-                    let unstringified = PubKey stringified
-                    unstringified
-                NodeInfo (pubKey, nodeEndPoint.IPEndPoint.Address.ToString(), nodeEndPoint.IPEndPoint.Port)
-            let openChannelReq =
-                new OpenChannelRequest (
-                    NodeInfo = nodeInfo,
-                    ChannelAmount = amount,
-                    FeeRate = new FeeRate(Money(uint64 feeRate.Value))
-                )
-            let! openChannelResponse = Async.AwaitTask <| (client :> ILightningClient).OpenChannel openChannelReq
-            match openChannelResponse.Result with
-            | OpenChannelResult.Ok -> return Ok ()
-            | err -> return Error err
-        | _ ->
-            // TODO: add proper error message
-            return failwith "node endpoint null"
+        let client = self.Client()
+        let nodeInfo =
+            let pubKey =
+                let stringified = nodeEndPoint.NodeId.ToString()
+                let unstringified = PubKey stringified
+                unstringified
+            NodeInfo (pubKey, nodeEndPoint.IPEndPoint.Address.ToString(), nodeEndPoint.IPEndPoint.Port)
+        let openChannelReq =
+            new OpenChannelRequest (
+                NodeInfo = nodeInfo,
+                ChannelAmount = amount,
+                FeeRate = new FeeRate(Money(uint64 feeRate.Value))
+            )
+        let! openChannelResponse = Async.AwaitTask <| (client :> ILightningClient).OpenChannel openChannelReq
+        match openChannelResponse.Result with
+        | OpenChannelResult.Ok -> return Ok ()
+        | err -> return Error err
     }
 
     member self.CloseChannel (fundingOutPoint: OutPoint)

@@ -864,11 +864,11 @@ module public Connection =
                            (maybeBindAddress: Option<IPEndPoint>)
                            (nodeServerType: NodeServerType)
                                : Async<NodeServer> = async {
-        let privateKey = Account.GetPrivateKey channelStore.Account password
-        let nodeMasterPrivKey: NodeMasterPrivKey =
-            NodeClient.AccountPrivateKeyToNodeSecret privateKey
-            |> NodeMasterPrivKey
-        let! transportListener = TransportListener.Bind nodeMasterPrivKey maybeBindAddress nodeServerType
-        return new NodeServer (channelStore, transportListener)
+            let privateKey = Account.GetPrivateKey channelStore.Account password
+            let nodeMasterPrivKey: NodeMasterPrivKey =
+                NodeClient.AccountPrivateKeyToNodeSecret privateKey
+                |> NodeMasterPrivKey
+            let! transportListener = TransportListener.Bind nodeMasterPrivKey maybeBindAddress nodeServerType
+            return new NodeServer (channelStore, transportListener)
         }
 
