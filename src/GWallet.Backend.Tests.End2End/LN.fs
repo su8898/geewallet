@@ -26,6 +26,9 @@ type LN() =
     let walletToWalletTestPayment1Amount = Money (0.01m, MoneyUnit.BTC)
     let walletToWalletTestPayment2Amount = Money (0.015m, MoneyUnit.BTC)
 
+    let AddDebugLog (message:string) =
+        Console.WriteLine message
+
     let TearDown walletInstance bitcoind electrumServer lnd =
         (walletInstance :> IDisposable).Dispose()
         (lnd :> IDisposable).Dispose()
@@ -61,10 +64,14 @@ type LN() =
     let AcceptChannelFromLndFunder () =
         async {
             let! serverWallet = ServerWalletInstance.New Config.FundeeLightningIPEndpoint None
+            AddDebugLog "Bitcoind.Start()"
             let! bitcoind = Bitcoind.Start()
+            AddDebugLog "ElectrumServer.Start"
             let! electrumServer = ElectrumServer.Start bitcoind
+            AddDebugLog "Lnd.Start"
             let! lnd = Lnd.Start bitcoind
 
+            AddDebugLog "lnd.FundByMining bitcoind"
             do! lnd.FundByMining bitcoind
 
             let! feeRate = ElectrumServer.EstimateFeeRate()
@@ -72,6 +79,7 @@ type LN() =
             let openChannelTask = async {
                 match serverWallet.NodeEndPoint with
                 | Some endPoint ->
+                    AddDebugLog "some NodeEndPoint"
                     do! lnd.ConnectTo endPoint
                     return!
                         lnd.OpenChannel
@@ -79,6 +87,7 @@ type LN() =
                             (Money(0.002m, MoneyUnit.BTC))
                             feeRate
                 | None ->
+                    AddDebugLog "NodeEndPoint is null"
                     return failwith "could not connect. nodeendpoint is null"
             }
 
@@ -324,9 +333,6 @@ type LN() =
             if Money(channelInfoAfterPayment2.Balance, MoneyUnit.BTC) <> balanceBeforeAnyPayment + walletToWalletTestPayment1Amount + walletToWalletTestPayment2Amount then
                 failwith "incorrect balance after receiving payment 2"
         }
-
-    let AddDebugLog (message:string) =
-        Console.WriteLine message
 
     [<Category "G2G_ChannelOpening_Funder">]
     [<Test>]

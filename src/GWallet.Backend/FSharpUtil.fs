@@ -56,8 +56,8 @@ module FSharpUtil =
         let SPrintF6 (fmt: string) (a: Object) (b: Object) (c: Object) (d: Object) (e: Object) (f: Object) =
             String.Format(ToStringFormat fmt, a, b, c, d, e, f)
 
-        let SPrintF7 (fmt: string) (a: Object) (b: Object) (c: Object) (d: Object) (e: Object) =
-            String.Format(ToStringFormat fmt, a, b, c, d, e)
+        let SPrintF7 (fmt: string) (a: Object) (b: Object) (c: Object) (d: Object) (e: Object) (f: Object) (g: Object) =
+            String.Format(ToStringFormat fmt, a, b, c, d, e, f, g)
 
         let SPrintF8 (fmt: string) (a: Object) (b: Object) (c: Object) (d: Object) (e: Object) (f: Object) (g: Object) (h: Object) =
             String.Format(ToStringFormat fmt, a, b, c, d, e, f, g, h)
@@ -75,6 +75,10 @@ module FSharpUtil =
 
         let SPrintF5 fmt a b c d e = sprintf fmt a b c d e
 
+        let SPrintF6 fmt a b c d e f = sprintf fmt a b c d e f
+
+        let SPrintF7 fmt a b c d e f g = sprintf fmt a b c d e f g
+
         let SPrintF8 fmt a b c d e f g h = sprintf fmt a b c d e f g h
 #else
         let SPrintF1 (fmt: string) (a: Object) =
@@ -91,6 +95,12 @@ module FSharpUtil =
 
         let SPrintF5 (fmt: string) (a: Object) (b: Object) (c: Object) (d: Object) (e: Object) =
             ReflectionlessPrint.SPrintF5 fmt a b c d e
+
+        let SPrintF6 (fmt: string) (a: Object) (b: Object) (c: Object) (d: Object) (e: Object) (f: Object) =
+            ReflectionlessPrint.SPrintF6 fmt, a, b, c, d, e, f
+
+        let SPrintF7 (fmt: string) (a: Object) (b: Object) (c: Object) (d: Object) (e: Object) (f: Object) (g: Object) =
+            ReflectionlessPrint.SPrintF7 fmt a b c d e f g
 
         let SPrintF8 (fmt: string) (a: Object) (b: Object) (c: Object) (d: Object) (e: Object) (f: Object) (g: Object) (h: Object) =
             ReflectionlessPrint.SPrintF8 fmt a b c d e f g h

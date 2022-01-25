@@ -368,20 +368,7 @@ module LayerTwo =
                         async {
                             let nodeClient = Lightning.Connection.StartClient channelStore password
 
-                            let nonionIntroductionPointPublicInfo =
-                                match channelInfo.NodeServerType with
-                                | NodeServerType.Tor ->
-                                    let getNodeType (currency: Currency) (text: string): NodeNOnionIntroductionPoint =
-                                        if NodeNOnionIntroductionPoint.IsNOnionConnection text then
-                                            NodeNOnionIntroductionPoint.Parse currency text
-                                        else
-                                            // FIXME: what happens when the user enter an incorrect URL?
-                                            failwith "invalid url"
-
-                                    UserInteraction.Ask (getNodeType currency) "Channel counterparty QR connection string contents"
-                                | _ -> None
-
-                            // TODO: pass appropriate nonionIntroductionPoint
+                            let nonionIntroductionPointPublicInfo = UserInteraction.AskConnectionString channelInfo.NodeServerType currency
                             let! closeRes = Lightning.Network.CloseChannel nodeClient channelId nonionIntroductionPointPublicInfo
                             match closeRes with
                             | Error closeError ->
@@ -445,17 +432,18 @@ module LayerTwo =
             let tryAccept password =
                 async {
                     use! nodeServer = Lightning.Connection.StartServer channelStore password bindAddress connectionType
-                    match connectionType with
-                    | NodeServerType.Tcp ->
-                        let nodeEndPoint = Lightning.Network.EndPoint nodeServer
-                        Console.WriteLine(sprintf "This node, connect to it: %s" (nodeEndPoint.ToString()))
-                    | NodeServerType.Tor ->
-                        let torEndPoint =
+                    let nodeAddress =
+                        match connectionType with
+                        | NodeServerType.Tcp ->
+                            let nodeEndPoint = Lightning.Network.EndPoint nodeServer
+                            nodeEndPoint.ToString()
+                        | NodeServerType.Tor ->
                             match Lightning.Network.TorEndPoint nodeServer with
                             | Some endPoint ->
                                 endPoint.ToString()
                             | _ -> String.Empty
-                        Console.WriteLine(sprintf "This node, connect to it: %s" torEndPoint)
+                    Console.WriteLine(sprintf "This node, connect to it: %s" nodeAddress)
+
                     let! acceptChannelRes = Lightning.Network.AcceptChannel nodeServer
                     match acceptChannelRes with
                     | Error nodeAcceptChannelError ->
@@ -586,19 +574,8 @@ module LayerTwo =
                     "Ensure the fundee is ready to accept a connection to lock the funding, \
                     then press any key to continue."
                 Console.ReadKey true |> ignore
-                let nonionIntroductionPointPublicInfo =
-                    match channelInfo.NodeServerType with
-                    | NodeServerType.Tor ->
-                        let getNodeType (currency: Currency) (text: string): NodeNOnionIntroductionPoint =
-                            if NodeNOnionIntroductionPoint.IsNOnionConnection text then
-                                NodeNOnionIntroductionPoint.Parse currency text
-                            else
-                                // FIXME: what happens when the user enter an incorrect URL?
-                                failwith "invalid url"
 
-                        UserInteraction.Ask (getNodeType currency) "Channel counterparty QR connection string contents"
-                    | _ -> None
-
+                let nonionIntroductionPointPublicInfo = UserInteraction.AskConnectionString channelInfo.NodeServerType currency
                 let tryLock password =
                     async {
                         let nodeClient = Lightning.Connection.StartClient channelStore password

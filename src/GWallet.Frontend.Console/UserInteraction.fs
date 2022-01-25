@@ -820,3 +820,19 @@ module UserInteraction =
                 //Console.WriteLine("Try again or leave blank to abort.")
                 AskConnectionType()
 
+    let rec internal AskConnectionString nodeServerType currency: Option<NodeNOnionIntroductionPoint> =
+        match nodeServerType with
+        | NodeServerType.Tor ->
+            let getNodeType (currency: Currency) (text: string): Option<NodeNOnionIntroductionPoint> =
+                if text = String.Empty then
+                    None
+                else
+                    if NodeNOnionIntroductionPoint.IsNOnionConnection text then
+                        Some (NodeNOnionIntroductionPoint.Parse currency text)
+                    else
+                        AskConnectionString nodeServerType currency
+
+            match Ask (getNodeType currency) "Channel counterparty QR connection string contents" with
+            | Some introductionPoint -> introductionPoint
+            | _ -> None
+        | _ -> None
