@@ -99,23 +99,23 @@ type RecvBytesError =
         | PeerDisconnected err -> err.PossibleBug
         | Decryption _ -> false
 
-type ListenerType =
+type IncomingConnectionMethod =
     | Tcp of TcpListener
     | Tor of TorServiceHost
 
 type internal TransportListener =
     internal {
         NodeMasterPrivKey: NodeMasterPrivKey
-        Listener: ListenerType
+        Listener: IncomingConnectionMethod
         NodeServerType: NodeServerType
         ConnectionDetail: Option<IntroductionPointPublicInfo>
     }
     interface IDisposable with
         member self.Dispose() =
             match self.Listener with
-            | ListenerType.Tcp tcp ->
+            | IncomingConnectionMethod.Tcp tcp ->
                 tcp.Stop()
-            | ListenerType.Tor _tor ->
+            | IncomingConnectionMethod.Tor _tor ->
                 // TODO: stop the TorServiceHost (how do we do that?)
                 ()
 
@@ -133,13 +133,11 @@ type internal TransportListener =
                     SocketOptionName.ReuseAddress,
                     true
                 )
-                Console.WriteLine "start server 3"
                 listener.Start()
-                Console.WriteLine "start server 4"
 
                 return {
                     NodeMasterPrivKey = nodeMasterPrivKey
-                    Listener = ListenerType.Tcp listener
+                    Listener = IncomingConnectionMethod.Tcp listener
                     NodeServerType = nodeServerType
                     ConnectionDetail = None
                 }
@@ -154,7 +152,7 @@ type internal TransportListener =
             
             return {
                 NodeMasterPrivKey = nodeMasterPrivKey
-                Listener = ListenerType.Tor host
+                Listener = IncomingConnectionMethod.Tor host
                 NodeServerType = nodeServerType
                 ConnectionDetail = Some exportedConnectionDetail
             }
@@ -162,10 +160,10 @@ type internal TransportListener =
 
     member internal self.LocalIPEndPoint: Option<IPEndPoint> =
         match self.Listener with
-        | ListenerType.Tcp tcp ->
+        | IncomingConnectionMethod.Tcp tcp ->
             // sillly .NET API: downcast is even done in the sample from the docs: https://docs.microsoft.com/en-us/dotnet/api/system.net.sockets.tcplistener.localendpoint?view=netcore-3.1
             Some (tcp.LocalEndpoint :?> IPEndPoint)
-        | ListenerType.Tor _tor ->
+        | IncomingConnectionMethod.Tor _tor ->
             // TODO: IPEndPoint of TorServiceHost?
             None
 
@@ -185,7 +183,10 @@ type internal TransportListener =
     member internal self.TorEndPoint: Option<NodeNOnionIntroductionPoint> =
         let nodeId = PublicKey self.PubKey
         // TODO: refactor. shouldn't use value and shouldn't return Option
-        Some ({ NodeNOnionIntroductionPoint.NodeId = nodeId; IntroductionPointPublicInfo = self.ConnectionDetail.Value })
+        match self.ConnectionDetail with
+        | Some connectionDetail ->
+            Some ({ NodeNOnionIntroductionPoint.NodeId = nodeId; IntroductionPointPublicInfo = connectionDetail })
+        | None -> None
 
 type PeerErrorMessage =
     {
@@ -346,14 +347,14 @@ type internal TransportStream =
                 return Error socketExceptions
             }
 
-    static member private TcpOrTorAcceptAny (listener: ListenerType)
+    static member private TcpOrTorAcceptAny (listener: IncomingConnectionMethod)
                                                : Async<Result<TransportStreamClientType, seq<SocketException>>> = async {
         try
             match listener with
-            | ListenerType.Tcp tcpListener ->
+            | IncomingConnectionMethod.Tcp tcpListener ->
                 let! client = tcpListener.AcceptTcpClientAsync() |> Async.AwaitTask
                 return Ok (TransportStreamClientType.Client client)
-            | ListenerType.Tor torListener ->
+            | IncomingConnectionMethod.Tor torListener ->
                 let! client = torListener.AcceptClient()
                 return Ok (TransportStreamClientType.TorClientStream client)
         with

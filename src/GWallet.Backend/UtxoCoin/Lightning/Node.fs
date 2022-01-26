@@ -868,7 +868,6 @@ module public Connection =
         let nodeMasterPrivKey: NodeMasterPrivKey =
             NodeClient.AccountPrivateKeyToNodeSecret privateKey
             |> NodeMasterPrivKey
-        Console.WriteLine "start server 2"
         let! transportListener = TransportListener.Bind nodeMasterPrivKey maybeBindAddress nodeServerType
         return new NodeServer (channelStore, transportListener)
     }

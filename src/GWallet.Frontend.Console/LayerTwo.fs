@@ -421,7 +421,7 @@ module LayerTwo =
                     Some (AskBindAddress())
                 | _ -> None
 
-            let connectionType =
+            let nodeServerType =
                 match maybeConnectionType with
                 | Some connectionType ->
                     connectionType
@@ -431,9 +431,9 @@ module LayerTwo =
 
             let tryAccept password =
                 async {
-                    use! nodeServer = Lightning.Connection.StartServer channelStore password bindAddress connectionType
+                    use! nodeServer = Lightning.Connection.StartServer channelStore password bindAddress nodeServerType
                     let nodeAddress =
-                        match connectionType with
+                        match nodeServerType with
                         | NodeServerType.Tcp ->
                             let nodeEndPoint = Lightning.Network.EndPoint nodeServer
                             nodeEndPoint.ToString()
