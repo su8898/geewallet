@@ -201,6 +201,7 @@ type ServerWalletInstance private (wallet: WalletInstance, nodeServer: NodeServe
         let! wallet = WalletInstance.New privateKeyOpt
         let! nodeServer =
             // TODO: pass appropriate NodeClientType instead of NodeClientType.TcpClient
+            Console.WriteLine "start server 1"
             Connection.StartServer wallet.ChannelStore wallet.Password (Some listenEndpoint) NodeServerType.Tcp
         return new ServerWalletInstance(wallet, nodeServer)
     }

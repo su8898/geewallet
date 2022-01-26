@@ -133,7 +133,9 @@ type internal TransportListener =
                     SocketOptionName.ReuseAddress,
                     true
                 )
+                Console.WriteLine "start server 3"
                 listener.Start()
+                Console.WriteLine "start server 4"
 
                 return {
                     NodeMasterPrivKey = nodeMasterPrivKey
