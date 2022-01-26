@@ -63,6 +63,7 @@ type LN() =
 
     let AcceptChannelFromLndFunder () =
         async {
+            AddDebugLog "ServerWalletInstance.New"
             let! serverWallet = ServerWalletInstance.New Config.FundeeLightningIPEndpoint None
             AddDebugLog "Bitcoind.Start()"
             let! bitcoind = Bitcoind.Start()
@@ -551,6 +552,7 @@ type LN() =
     member __.``can accept channel from LND``() = Async.RunSynchronously <| async {
         AddDebugLog "Begin: can accept channel from LND"
         let! _channelId, serverWallet, bitcoind, electrumServer, lnd = AcceptChannelFromLndFunder ()
+        AddDebugLog "Step2: can accept channel from LND"
 
         TearDown serverWallet lnd electrumServer bitcoind
         AddDebugLog "End: can accept channel from LND"
