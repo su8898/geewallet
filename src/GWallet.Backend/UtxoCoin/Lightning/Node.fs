@@ -320,14 +320,14 @@ type NodeClient internal (channelStore: ChannelStore, nodeMasterPrivKey: NodeMas
 
     member internal self.SendMonoHopPayment (channelId: ChannelIdentifier)
                                             (transferAmount: TransferAmount)
+                                            (nonionIntroductionPoint: Option<NodeNOnionIntroductionPoint>)
                                                 : Async<Result<unit, IErrorMsg>> = async {
         let amount =
             let btcAmount = transferAmount.ValueToSend
             let lnAmount = int64(btcAmount * decimal DotNetLightning.Utils.LNMoneyUnit.BTC)
             DotNetLightning.Utils.LNMoney lnAmount
         let! activeChannelRes =
-            // TODO: add proper argument for nOnionIntroductionPointInfo
-            ActiveChannel.ConnectReestablish self.ChannelStore nodeMasterPrivKey channelId None
+            ActiveChannel.ConnectReestablish self.ChannelStore nodeMasterPrivKey channelId nonionIntroductionPoint
         match activeChannelRes with
         | Error reconnectActiveChannelError ->
             if reconnectActiveChannelError.PossibleBug then
@@ -360,7 +360,6 @@ type NodeClient internal (channelStore: ChannelStore, nodeMasterPrivKey: NodeMas
     member internal self.InitiateCloseChannel (channelId: ChannelIdentifier) (nonionIntroductionPoint: Option<NodeNOnionIntroductionPoint>): Async<Result<unit, NodeInitiateCloseChannelError>> =
         async {
             let! connectRes =
-                // TODO: add proper argument for nOnionIntroductionPointInfo
                 ActiveChannel.ConnectReestablish self.ChannelStore self.NodeMasterPrivKey channelId nonionIntroductionPoint
             match connectRes with
             | Error connectError ->
@@ -379,7 +378,6 @@ type NodeClient internal (channelStore: ChannelStore, nodeMasterPrivKey: NodeMas
                                                        : Async<Result<unit, IErrorMsg>> =
         async {
             let! activeChannelRes =
-                // TODO: add proper argument for nOnionIntroductionPointInfo
                 ActiveChannel.ConnectReestablish
                     self.ChannelStore
                     nodeMasterPrivKey

@@ -467,13 +467,14 @@ module LayerTwo =
             | Some channelId ->
                 let channelInfo = channelStore.ChannelInfo channelId
                 let transferAmountOpt = UserInteraction.AskLightningAmount channelInfo
+                let nonionIntroductionPointPublicInfo = UserInteraction.AskConnectionString channelInfo.NodeServerType channelInfo.Currency
                 match transferAmountOpt with
                 | None -> ()
                 | Some transferAmount ->
                     let trySendPayment password =
                         async {
                             let nodeClient = Lightning.Connection.StartClient channelStore password
-                            let! paymentRes = Lightning.Network.SendMonoHopPayment nodeClient channelId transferAmount
+                            let! paymentRes = Lightning.Network.SendMonoHopPayment nodeClient channelId transferAmount nonionIntroductionPointPublicInfo
                             match paymentRes with
                             | Error nodeSendMonoHopPaymentError ->
                                 let currency = (account :> IAccount).Currency

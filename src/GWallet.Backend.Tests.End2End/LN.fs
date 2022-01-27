@@ -259,6 +259,7 @@ type LN() =
                     clientWallet.NodeClient
                     channelId
                     transferAmount
+                    None
             UnwrapResult sendMonoHopPayment1Res "SendMonoHopPayment failed"
 
             let channelInfoAfterPayment1 = clientWallet.ChannelStore.ChannelInfo channelId
@@ -280,6 +281,7 @@ type LN() =
                     clientWallet.NodeClient
                     channelId
                     transferAmount
+                    None
             UnwrapResult sendMonoHopPayment2Res "SendMonoHopPayment failed"
 
             let channelInfoAfterPayment2 = clientWallet.ChannelStore.ChannelInfo channelId
@@ -1068,6 +1070,7 @@ type LN() =
                 walletInstance.NodeClient
                 channelId
                 transferAmount
+                None
         UnwrapResult sendMonoHopPayment1Res "SendMonoHopPayment failed"
 
         let channelInfoAfterPayment1 = walletInstance.ChannelStore.ChannelInfo channelId
@@ -1088,6 +1091,7 @@ type LN() =
                 walletInstance.NodeClient
                 channelId
                 transferAmount
+                None
         UnwrapResult sendMonoHopPayment2Res "SendMonoHopPayment failed"
 
         let channelInfoAfterPayment2 = walletInstance.ChannelStore.ChannelInfo channelId
