@@ -1396,7 +1396,7 @@ type LN() =
         let! newFeeRateOpt = clientWallet.ChannelStore.FeeUpdateRequired channelId
         let newFeeRate = UnwrapOption newFeeRateOpt "Fee update should be required"
         let! updateFeeRes =
-            (Node.Client clientWallet.NodeClient).UpdateFee channelId newFeeRate
+            (Node.Client clientWallet.NodeClient).UpdateFee channelId newFeeRate None
         UnwrapResult updateFeeRes "UpdateFee failed"
 
         let channelInfoAfterUpdateMessageFee = clientWallet.ChannelStore.ChannelInfo channelId

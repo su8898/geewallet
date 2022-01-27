@@ -809,6 +809,7 @@ type Node =
 
     member self.UpdateFee (channelId: ChannelIdentifier)
                           (feeRate: decimal)
+                          (nonionIntroductionPoint: Option<NodeNOnionIntroductionPoint>)
                               : Async<Result<unit, IErrorMsg>> = async {
         let feeRatePerKw = FeeEstimator.FeeRateFromDecimal feeRate
         let nodeMasterPrivKey =
@@ -821,7 +822,7 @@ type Node =
                 self.ChannelStore
                 nodeMasterPrivKey
                 channelId
-                None
+                nonionIntroductionPoint
         match activeChannelRes with
         | Error reconnectActiveChannelError ->
             if reconnectActiveChannelError.PossibleBug then

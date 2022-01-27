@@ -663,12 +663,14 @@ module LayerTwo =
                     | 1 -> Some ()
                     | _ -> readInput()
 
+            let nonionIntroductionPointPublicInfo = UserInteraction.AskConnectionString channelInfo.NodeServerType channelInfo.Currency
+
             match readInput() with
             | Some () ->
                 let tryUpdateFee password =
                     async {
                         let nodeClient = Lightning.Connection.StartClient channelStore password
-                        let! updateFeeRes = (Node.Client nodeClient).UpdateFee channelId feeRate
+                        let! updateFeeRes = (Node.Client nodeClient).UpdateFee channelId feeRate nonionIntroductionPointPublicInfo
                         match updateFeeRes with
                         | Error updateFeeError ->
                             Console.WriteLine(sprintf "Error updating fee: %s" updateFeeError.Message)
